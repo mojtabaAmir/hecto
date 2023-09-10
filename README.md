@@ -1,1 +1,1 @@
-Friendly test editor :)
+Friendly text editor :)
