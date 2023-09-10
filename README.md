@@ -1,0 +1,1 @@
+Friendly test editor :)
