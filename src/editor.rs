@@ -204,15 +204,15 @@ impl Editor {
         if width > len {
             status.push_str(&" ".repeat(width - len)); 
         }
-        status = format!("{}{}", status, line_indicator);
+        status = format!("{status}{line_indicator}");
         status.truncate(width); 
         Terminal::set_bg_color(STATUS_BG_COLOR);
         Terminal::set_fg_color(STATUS_FG_COLOR);
-        println!("{}\r", status);
+        println!("{status}\r");
         Terminal::reset_fg_color();
         Terminal::reset_bg_color();
     }
-     fn draw_message_bar(&self) {
+    fn draw_message_bar(&self) {
         Terminal::clear_current_line();
         let message = &self.status_message;
         if Instant::now() - message.time < Duration::new(5, 0) {
