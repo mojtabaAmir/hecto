@@ -202,7 +202,7 @@ impl Editor {
         );
         let len = status.len() + line_indicator.len();
         if width > len {
-            status.push_str(&" ".repeat(width - len)); 
+            status.push_str(&" ".repeat(width.saturating_sub(len))); 
         }
         status = format!("{status}{line_indicator}");
         status.truncate(width); 
@@ -218,7 +218,7 @@ impl Editor {
         if Instant::now() - message.time < Duration::new(5, 0) {
             let mut text = message.text.clone();
             text.truncate(self.terminal.size().width as usize);
-            print!("{}", text);
+            print!("{text}");
         }  
     } 
     fn move_cursor(&mut self, key: Key) {
@@ -234,7 +234,7 @@ impl Editor {
             Key::Up => y = y.saturating_sub(1),
             Key::Down => {
                 if y < height {
-                    y = y.saturating_add(1)
+                    y = y.saturating_add(1);
                 }
             },
             Key::Left => {

@@ -76,7 +76,7 @@ impl Row {
         let remainder: String = self.string[..].graphemes(true).skip(at).collect();
         self.string = beginning;
         self.update_len();
-        Self::from(&remainder[..])
+        Self::from(&*remainder)
     }
     pub fn as_bytes(&self) -> &[u8] {
         self.string.as_bytes()
