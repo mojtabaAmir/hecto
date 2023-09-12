@@ -75,6 +75,14 @@ impl Document {
             row.delete(at.x);
         } 
     }
+    pub fn cut_row(&mut self, at: &Position) -> Option<String> {
+        if at.y >= self.len() {
+            return None;
+        }
+        let is_cut_row = self.rows.remove(at.y);
+        self.dirty = true;
+        Some(is_cut_row.to_string().clone())
+    }
     pub fn save(&mut self) -> Result<(), Error> {
         if let Some(file_name) = &self.file_name {
             let mut file = fs::File::create(file_name)?;

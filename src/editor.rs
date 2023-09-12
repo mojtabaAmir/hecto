@@ -1,3 +1,4 @@
+use arboard::Clipboard;
 use crate::Document;
 use crate::Row;
 use crate::Terminal;
@@ -40,6 +41,7 @@ pub struct Editor {
     document: Document,
     status_message: StatusMessage,
     quit_times: u8,
+    clipboard: Clipboard,
 }
 
 impl Editor {
@@ -80,6 +82,7 @@ impl Editor {
             document,
             status_message: StatusMessage::from(initial_status),
             quit_times: QUIT_TIMES,
+            clipboard: Clipboard::new().unwrap(),
         }
     }
     fn save(&mut self) {
@@ -113,6 +116,11 @@ impl Editor {
                 self.should_quit = true
             } 
             Key::Ctrl('s') => self.save(),
+            Key::Ctrl('k') => {
+                if let Some(line) = self.document.cut_row(&self.cursor_position) {
+                    self.clipboard.set_text(line).unwrap();
+                }
+            }
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
                 self.move_cursor(Key::Right);
@@ -322,11 +330,7 @@ impl Editor {
             self.status_message = StatusMessage::from(format!("{}{}", prompt, result));
             self.refresh_screen()?;
             match Terminal::read_key()? {
-                Key::Backspace => {
-                    if !result.is_empty() {
-                        result.truncate(result.len() - 1);
-                    }
-                }
+                Key::Backspace => result.truncate(result.len().saturating_sub(1)),
                 Key::Char('\n') => break,
                 Key::Char(c) => {
                     if !c.is_control() {
