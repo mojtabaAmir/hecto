@@ -107,4 +107,19 @@ impl Row {
     pub fn to_string(&self) -> &String {
         &self.string
     }
+    pub fn find(&self, query: &str, after: usize) -> Option<usize> {
+        let substring: String = self.string[..].graphemes(true).skip(after).collect();  
+        let matching_byte_index = self.string.find(query);
+        if let Some(matching_byte_index) = matching_byte_index {
+            for (grapheme_index, (byte_index, _)) in
+                substring[..].grapheme_indices(true).enumerate()
+            {
+                if matching_byte_index == byte_index {
+                    #[allow(clippy::arithmetic_side_effects)]
+                    return Some(after + grapheme_index);
+                }
+            }
+        }
+        None
+    } 
 }

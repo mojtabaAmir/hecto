@@ -38,7 +38,7 @@ impl Document {
             return
         }
         let new_row = self.rows.get_mut(at.y).unwrap().split(at.x);
-        #[allow(clippy::integer_arithmetic)]
+        #[allow(clippy::arithmetic_side_effects)]
         self.rows.insert(at.y + 1, new_row);
     } 
     pub fn insert(&mut self, at: &Position, c: char) {
@@ -59,7 +59,7 @@ impl Document {
             row.insert(at.x, c);
         }
     }
-    #[allow(clippy::integer_arithmetic)]
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn delete(&mut self, at: &Position) {
         let len = self.len();
         if at.y >= len {
@@ -97,4 +97,14 @@ impl Document {
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
+    pub fn find(&self, query: &str, after: &Position) -> Option<Position> {
+        let mut x = after.x;
+        for (y, row) in self.rows.iter().enumerate().skip(after.y) {
+            if let Some(x) = row.find(query, x) {
+                return Some(Position { x, y });
+            }
+            x = 0;
+        }
+        None
+    } 
 }
