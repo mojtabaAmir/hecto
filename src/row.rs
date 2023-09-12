@@ -1,4 +1,4 @@
-use std::cmp;
+use core::cmp;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Default)]
@@ -21,7 +21,7 @@ impl Row {
         let end = cmp::min(end, self.string.len());
         let start = cmp::min(start, end);
         let mut result = String::new();
-        #[allow(clippy::integer_arithmetic)]
+        #[allow(clippy::arithmetic_side_effects)]
         for grapheme in self.string[..]
             .graphemes(true)
             .skip(start)
@@ -44,7 +44,7 @@ impl Row {
     pub fn insert(&mut self, at: usize, c: char) {
         if at >= self.len() {
             self.string.push(c);
-            self.len += 1;
+            self.len = self.len.saturating_add(1);
             return;
         }
         let mut result: String = String::new();
@@ -77,7 +77,7 @@ impl Row {
     }
     pub fn append(&mut self, new: &Self) {
         self.string = format!("{}{}", self.string, new.string);
-        self.len += new.len;
+        self.len = self.len.saturating_add(new.len);
     }
     pub fn split(&mut self, at: usize) -> Self {
         let mut row: String = String::new();
