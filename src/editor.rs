@@ -68,11 +68,14 @@ impl Editor {
     pub fn default() -> Self {
         let args: Vec<String> = env::args().collect();
         let mut initial_status = String::from("HELP: Ctrl-F = find | Ctrl-S = save | Ctrl-Q = quit");
+        let mut initial_cursor = Position::default();
         let document: Document = if args.len() > 1 {
             let file_name = &args[1];
             let doc = Document::open(&file_name);
             if doc.is_ok() {
-                doc.unwrap()
+                let doc = doc.unwrap();
+                initial_cursor.x = doc.line_len();
+                doc
             } else {
                 initial_status = format!("ERR: Could not open file: {}", file_name);
                 Document::default()
@@ -84,7 +87,7 @@ impl Editor {
         Self {
             should_quit: false,
             terminal: Terminal::default().expect("Failed to initialize terminal"),
-            cursor_position: Position::default(),
+            cursor_position: initial_cursor,
             offset: Position::default(),
             document,
             status_message: StatusMessage::from(initial_status),
@@ -174,7 +177,7 @@ impl Editor {
             },
             Key::Delete => self.document.delete(&self.cursor_position),
             Key::Backspace => {
-                if self.cursor_position.x > 0 || self.cursor_position.y > 0 {
+                if self.cursor_position.x > self.document.line_len() || self.cursor_position.y > 0 {
                     self.move_cursor(Key::Left);
                     self.document.delete(&self.cursor_position);
                 }
@@ -287,12 +290,13 @@ impl Editor {
     } 
     fn move_cursor(&mut self, key: Key) {
         let terminal_height = self.terminal.size().height as usize;
+        let document_line_length = self.document.line_len();
         let Position { mut y, mut x } = self.cursor_position;
         let height = self.document.len();
         let mut width = if let Some(row) = self.document.row(y) {
-            row.len()
+            row.len().saturating_add(document_line_length)
         } else {
-            0
+            document_line_length
         };
         match key {
             Key::Up => y = y.saturating_sub(1),
@@ -302,23 +306,23 @@ impl Editor {
                 }
             },
             Key::Left => {
-                if x > 0 {
+                if x > document_line_length {
                     x -= 1;
                 } else if y > 0 {
                     y -= 1;
                     if let Some(row) = self.document.row(y) {
-                        x = row.len();
+                        x = row.len().saturating_add(document_line_length);
                     } else {
-                        x = 0;
+                        x = document_line_length;
                     }
                 }
-            } ,
+            },
             Key::Right => {
                 if x < width {
                     x += 1;
                 } else if y < height {
                     y += 1;
-                    x = 0; 
+                    x = document_line_length; 
                 }
             },
             Key::PageUp => {
@@ -335,14 +339,14 @@ impl Editor {
                     height
                 }
             } ,
-            Key::Home => x = 0,
+            Key::Home => x = document_line_length,
             Key::End => x = width,
             _ => (),
         }
         width = if let Some(row) = self.document.row(y) {
-            row.len()
+            row.len().saturating_add(document_line_length)
         } else {
-            0
+            document_line_length
         };
         if x > width {
             x = width;
@@ -366,12 +370,25 @@ impl Editor {
         let end = self.offset.x + width;
         let row = row.render(start, end);
         println!("{row}\r");
-    } 
+    }
+    fn show_line_number(&self, row_index: usize) {
+        let line_number = row_index.saturating_add(1);
+        // TODO: Improve integer length function
+        let spaces = " ".repeat(
+            self.document.line_len().saturating_sub(line_number.to_string().len()));
+        Terminal::set_bg_color(STATUS_BG_COLOR);
+        Terminal::set_fg_color(STATUS_FG_COLOR);
+        print!("{}{}", spaces, line_number);
+        Terminal::reset_fg_color();
+        Terminal::reset_bg_color();
+    }
     fn draw_rows(&self) {
         let height = self.terminal.size().height;
         for terminal_row in 0..height {
             Terminal::clear_current_line();
-            if  let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
+            let row_index = terminal_row as usize + self.offset.y;
+            if  let Some(row) = self.document.row(row_index) {
+                self.show_line_number(row_index);
                 self.draw_row(row);
             } else if self.document.is_empty() && terminal_row == height / 3 {
                 self.draw_welcome_message();

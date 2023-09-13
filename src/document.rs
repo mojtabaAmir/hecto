@@ -40,6 +40,9 @@ impl Document {
     pub fn len(&self) -> usize {
         self.rows.len()
     }
+    pub fn line_len(&self) -> usize {
+        self.len().to_string().len()
+    }
     fn insert_newline(&mut self, at: &Position) {
         if at.y == self.len() {
             self.rows.push(Row::default());
