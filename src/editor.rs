@@ -149,7 +149,13 @@ impl Editor {
             self.scroll();
         }
         self.highlighted_word = None;
-    } 
+    }
+    fn document_cursor(&self) -> Position {
+        Position {
+            x: self.cursor_position.x.saturating_sub(self.document.line_len()),
+            y: self.cursor_position.y,
+        }
+    }
     fn process_keypress(&mut self) -> Result<(), std::io::Error> {
         let pressed_key = Terminal::read_key()?;
         match pressed_key {
@@ -172,28 +178,15 @@ impl Editor {
             }
             Key::Ctrl('f') => self.search(), 
             Key::Char(c) => {
-                let doc_position = Position {
-                    x: self.cursor_position.x.saturating_sub(self.document.line_len()),
-                    y: self.cursor_position.y,
-                };
-                self.document.insert(&doc_position, c);
+                self.document.insert(&self.document_cursor(), c);
                 self.move_cursor(Key::Right);
             },
             Key::Delete =>  {
-                let doc_position = Position {
-                    x: self.cursor_position.x.saturating_sub(self.document.line_len()),
-                    y: self.cursor_position.y,
-                };
-                self.document.delete(&doc_position);
+                self.document.delete(&self.document_cursor());
             }
             Key::Backspace => {
                 if self.cursor_position.x > self.document.line_len() || self.cursor_position.y > 0 {
-                    self.move_cursor(Key::Left);
-                    let doc_position = Position {
-                        x: self.cursor_position.x.saturating_sub(self.document.line_len()),
-                        y: self.cursor_position.y,
-                    };
-                    self.document.delete(&doc_position);
+                    self.document.delete(&self.document_cursor());
                 }
             }
             Key::Up
